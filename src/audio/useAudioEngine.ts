@@ -11,6 +11,8 @@ export interface UseAudioEngineOptions {
 }
 
 export interface AudioEngineApi {
+  /** Start a new render frame: re-samples the analyser once on the next read. */
+  newFrame: () => void;
   /** Read the current 0..1 audio level (0 in "time" mode). Stable reference. */
   getLevel: () => number;
   /** Read the current 0..1 bass/mid/treble split (zeros in "time" mode). */
@@ -59,6 +61,7 @@ export function useAudioEngine(
   }, [engine]);
 
   const apiRef = useRef<AudioEngineApi>({
+    newFrame: () => engine.newFrame(),
     getLevel: () => engine.getLevel(),
     getBands: () => engine.getBands(),
     getSpectrum: (bands) => engine.getSpectrum(bands),

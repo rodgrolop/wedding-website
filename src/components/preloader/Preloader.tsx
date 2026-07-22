@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
   type TransitionEvent,
@@ -21,6 +22,14 @@ interface PreloaderProps {
 
 const Preloader = ({ ready, onEnter, onExited }: PreloaderProps) => {
   const [leaving, setLeaving] = useState(false);
+  // onExited must fire exactly once. iOS Safari doesn't always deliver
+  // transitionend, so a timeout fallback guarantees the scene is revealed.
+  const exited = useRef(false);
+  const finishExit = () => {
+    if (exited.current) return;
+    exited.current = true;
+    onExited();
+  };
 
   // On a fresh load: reset scroll to the top (don't let the browser restore a
   // previous position) and lock background scrolling until the user enters.
@@ -46,13 +55,21 @@ const Preloader = ({ ready, onEnter, onExited }: PreloaderProps) => {
 
   const handleClick = () => {
     if (!ready || leaving) return;
-    // start audio within the gesture, then begin the fade
-    onEnter();
+    // start audio within the gesture, then begin the fade. Never let a start
+    // error abort the reveal -> the fade/animation must always proceed.
+    try {
+      onEnter();
+    } catch {
+      /* audio failed to start; still enter the experience */
+    }
     setLeaving(true);
+    // Fallback in case transitionend never fires (iOS Safari). The fade is
+    // 0.9s; give it a little margin.
+    window.setTimeout(finishExit, 1200);
   };
 
   const handleTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
-    if (leaving && e.propertyName === "opacity") onExited();
+    if (leaving && e.propertyName === "opacity") finishExit();
   };
 
   return (
@@ -63,9 +80,6 @@ const Preloader = ({ ready, onEnter, onExited }: PreloaderProps) => {
         cursor: ready ? "pointer" : "default",
         pointerEvents: leaving ? "none" : "auto",
       }}
-      // Swallow the gesture so the audio engine's global "resume on first
-      // interaction" listener can't start the music before the user enters.
-      onPointerDown={(e) => e.stopPropagation()}
       onClick={handleClick}
       onTransitionEnd={handleTransitionEnd}
     >
@@ -78,7 +92,8 @@ const Preloader = ({ ready, onEnter, onExited }: PreloaderProps) => {
             data-text="BODAMJRODRIGO"
             style={styles.brand}
           >
-            <span style={styles.brandWhite}>BODAMJ</span>
+            <span style={styles.brandGrey}>BODA</span>
+            <span style={styles.brandWhite}>MJ</span>
             <span style={styles.brandOutline}>RODRIGO</span>
           </div>
           <div style={styles.cta}>Pulsa para entrar</div>
@@ -195,8 +210,15 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1,
     whiteSpace: "nowrap",
   },
+  brandGrey: {
+    color: "#383838",
+    WebkitTextStroke: "1px #383838",
+    paintOrder: "stroke fill",
+  },
   brandWhite: {
     color: "white",
+    WebkitTextStroke: "1px #fff",
+    paintOrder: "stroke fill",
   },
   brandOutline: {
     color: "black",

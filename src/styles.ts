@@ -4,7 +4,10 @@ export const style: Record<string, CSSProperties> = {
   mainContainer: {
     position: "relative",
     width: "100%",
-    height: "100vh",
+    // Height is set in index.html (#inicio) as `100vh` then `100svh` so the
+    // svh value (small viewport, toolbar shown) wins where supported, with a
+    // vh fallback. That two-value fallback can't live in an inline style, and
+    // an inline height would override the stylesheet anyway.
     backgroundColor: "black",
   },
   canvasLayer: {
@@ -18,6 +21,8 @@ export const style: Record<string, CSSProperties> = {
     left: 0,
     right: 0,
     bottom: 0,
+    // clear the home-indicator / safe area on notched phones
+    paddingBottom: "env(safe-area-inset-bottom)",
     zIndex: 2,
   },
   overlay: {

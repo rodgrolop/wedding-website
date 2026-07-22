@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
 import { shaderMaterial } from "@react-three/drei";
 import {
   EffectComposer,
@@ -18,8 +19,13 @@ import { type AudioEngineApi } from "../../audio/useAudioEngine";
 // Ribbon shape resolution.
 // LENGTH_SEGMENTS -> detail along each flowing line.
 // WIDTH_LINES     -> number of parallel lines stacked across the ribbon.
-const LENGTH_SEGMENTS = 240;
-const WIDTH_LINES = 40;
+// Mobile uses a lighter mesh: fewer parallel lines + segments dramatically cut
+// the additive/transparent overdraw (the fill-rate bottleneck on phone GPUs)
+// without touching the postprocessing look.
+const RES = {
+  desktop: { lengthSegments: 240, widthLines: 40 },
+  mobile: { lengthSegments: 150, widthLines: 24 },
+} as const;
 
 // Spatial EQ: number of spectrum bands mapped along the ribbon (must match the
 // N_EQ #define in ribbonVertex.glsl).
@@ -70,11 +76,11 @@ const RibbonMaterial = shaderMaterial(
 // let R3F know about the custom material -> <ribbonMaterial />
 extend({ RibbonMaterial });
 
-function useRibbonGeometry() {
+function useRibbonGeometry(lengthSegments: number, widthLines: number) {
   return useMemo(() => {
     const geometry = new THREE.BufferGeometry();
-    const cols = LENGTH_SEGMENTS + 1;
-    const rows = WIDTH_LINES;
+    const cols = lengthSegments + 1;
+    const rows = widthLines;
     // two vertices per sample point (one per side) so each line is a thin
     // triangle strip that can be given real thickness in the shader
     const count = cols * rows * 2;
@@ -119,12 +125,22 @@ function useRibbonGeometry() {
     geometry.setIndex(indices);
 
     return geometry;
-  }, []);
+  }, [lengthSegments, widthLines]);
 }
 
-function RibbonLines({ audio }: { audio: AudioEngineApi }) {
+function RibbonLines({
+  audio,
+  lengthSegments,
+  widthLines,
+  materialSide,
+}: {
+  audio: AudioEngineApi;
+  lengthSegments: number;
+  widthLines: number;
+  materialSide: THREE.Side;
+}) {
   const materialRef = useRef<any>(null);
-  const geometry = useRibbonGeometry();
+  const geometry = useRibbonGeometry(lengthSegments, widthLines);
   const size = useThree((s) => s.size);
 
   useEffect(() => {
@@ -136,6 +152,8 @@ function RibbonLines({ audio }: { audio: AudioEngineApi }) {
   useFrame(({ clock }) => {
     const m = materialRef.current;
     if (!m) return;
+    // start a fresh audio sample once per frame (shared by all consumers)
+    audio.newFrame();
     m.u_time = clock.getElapsedTime();
     m.u_frequency = audio.getLevel();
     const { bass, mid, treble } = audio.getBands();
@@ -154,7 +172,7 @@ function RibbonLines({ audio }: { audio: AudioEngineApi }) {
         transparent
         depthWrite={false}
         blending={THREE.AdditiveBlending}
-        side={THREE.DoubleSide}
+        side={materialSide}
       />
     </mesh>
   );
@@ -244,12 +262,18 @@ function FirstFrameSignal({ onReady }: { onReady?: () => void }) {
 const Ribbon = ({
   audio,
   onReady,
+  active = true,
 }: {
   audio: AudioEngineApi;
   onReady?: () => void;
+  /** When false, the render loop is paused (e.g. hero scrolled off-screen). */
+  active?: boolean;
 }) => {
   const glitchRef = useRef<any>(null);
   const caRef = useRef<any>(null);
+  const isMobile = useBreakpoint() === "mobile";
+  const res = isMobile ? RES.mobile : RES.desktop;
+  const materialSide = isMobile ? THREE.FrontSide : THREE.DoubleSide;
 
   // ChromaticAberration uses react-postprocessing's generic wrapper, which is
   // NOT forwardRef: in React 19 the `ref` prop leaks into the effect's props
@@ -263,10 +287,23 @@ const Ribbon = ({
   }, []);
 
   return (
-    <Canvas camera={{ position: [0, 0, 16], fov: 45 }}>
+    <Canvas
+      camera={{ position: [0, 0, 16], fov: 45 }}
+      // Cap the pixel ratio: phones report 2-3, which quadruples fragment work
+      // for a fill-rate-bound shader. 1.5 keeps it crisp at a fraction of cost.
+      dpr={[1, 1.5]}
+      // Pause rendering entirely when the hero is off-screen so scrolling the
+      // rest of the page isn't fighting a 60fps GPU load.
+      frameloop={active ? "always" : "never"}
+    >
       <color attach="background" args={["#000000"]} />
       <FirstFrameSignal onReady={onReady} />
-      <RibbonLines audio={audio} />
+      <RibbonLines
+        audio={audio}
+        lengthSegments={res.lengthSegments}
+        widthLines={res.widthLines}
+        materialSide={materialSide}
+      />
       <GlitchDriver audio={audio} glitchRef={glitchRef} caRef={caRef} />
       <EffectComposer>
         <Bloom

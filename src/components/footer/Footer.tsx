@@ -9,7 +9,8 @@ const Footer = () => {
       <div style={styles.grid}>
         <div style={styles.brandBlock}>
           <div style={styles.brandTitle}>
-            <span style={styles.brandWhite}>BODAMJ</span>
+            <span style={styles.brandGrey}>BODA</span>
+            <span style={styles.brandWhite}>MJ</span>
             <span style={styles.brandOutline}>RODRIGO</span>
           </div>
           <div style={styles.brandLocation}>
@@ -97,6 +98,11 @@ const styles: Record<string, CSSProperties> = {
   brandWhite: {
     // same look as App's whiteH1
     color: "white",
+    WebkitTextStroke: "1px white",
+  },
+  brandGrey: {
+    color: "#383838",
+    WebkitTextStroke: "1px #383838",
   },
   brandOutline: {
     // black fill + white outline, same stroke method as the other headers.

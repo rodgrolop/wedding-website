@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <!-- Stop iOS "data detectors" from turning phone-like numbers / addresses
+         (e.g. the postal code in a venue address) into underlined tel: links. -->
+    <meta
+      name="format-detection"
+      content="telephone=no,date=no,address=no,email=no"
+    />
     <title>Boda MJ y Rodrigo</title>
     <style>
       html,
@@ -17,6 +26,21 @@
          edge. clip only the horizontal axis; vertical scroll is untouched. */
       html {
         overflow-x: hidden;
+      }
+      /* Hero height: svh (small viewport, toolbar shown) so bottom-pinned UI
+         (the countdown) is never hidden behind mobile browser chrome; 100vh is
+         the fallback for browsers without svh. */
+      #inicio {
+        height: 100vh;
+        height: 100svh;
+      }
+      /* Neutralise iOS Safari data-detector links so detected numbers/addresses
+         keep the surrounding text style (no underline / blue link colour). */
+      a[x-apple-data-detectors],
+      a[x-apple-data-detectors] * {
+        color: inherit !important;
+        text-decoration: none !important;
+        -webkit-text-decoration: none !important;
       }
     </style>
   </head>

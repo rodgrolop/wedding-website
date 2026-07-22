@@ -56,6 +56,14 @@ export class AudioEngine {
   private smoothedBands = { bass: 0, mid: 0, treble: 0 };
   private smoothedSpectrum: number[] = [];
 
+  // Per-frame caching so the FFT is copied out at most once per frame and each
+  // metric is smoothed exactly once, no matter how many consumers read it.
+  // newFrame() (called once at the top of the render loop) invalidates these.
+  private freqDirty = true;
+  private levelDone = false;
+  private bandsDone = false;
+  private spectrumDone = false;
+
   constructor(options: AudioEngineOptions = {}) {
     this.files = options.files ?? [];
     this.fftSize = options.fftSize ?? 1024;
@@ -80,18 +88,55 @@ export class AudioEngine {
     this.songGain.connect(this.ctx.destination);
   }
 
+  /**
+   * Marks the start of a new render frame: the next getLevel/getBands/
+   * getSpectrum will re-read the analyser and re-smooth once. Call this once
+   * per frame before reading any metric.
+   */
+  newFrame() {
+    this.freqDirty = true;
+    this.levelDone = false;
+    this.bandsDone = false;
+    this.spectrumDone = false;
+  }
+
+  /** Copy the current FFT out of the analyser at most once per frame. */
+  private readFreq() {
+    if (this.freqDirty && this.analyser) {
+      this.analyser.getByteFrequencyData(this.freqData);
+      this.freqDirty = false;
+    }
+  }
+
   /** Resume the AudioContext + (re)start file playback. Call from a user gesture. */
   async resume() {
     this.ensureContext();
     this.started = true;
+
+    // iOS Safari only treats media playback as user-activated if play() is
+    // called SYNCHRONOUSLY within the gesture. Awaiting ctx.resume() first
+    // breaks that chain and the play() gets blocked (Android is lenient and
+    // works either way). So kick off play() before any await, then resume the
+    // context (which routes the element's audio through the graph once running).
+    const playPromise =
+      this.mode === "files" && this.audioEl && this.audioEl.paused
+        ? this.audioEl.play()
+        : null;
+
     if (this.ctx && this.ctx.state === "suspended") {
       await this.ctx.resume();
     }
-    if (this.mode === "files" && this.audioEl && this.audioEl.paused) {
+
+    if (playPromise) {
       try {
-        await this.audioEl.play();
+        await playPromise;
       } catch {
-        /* ignored: will retry on next gesture */
+        // Blocked despite the gesture: retry once the context is running.
+        try {
+          await this.audioEl?.play();
+        } catch {
+          /* ignored: will retry on next gesture */
+        }
       }
     }
   }
@@ -215,13 +260,15 @@ export class AudioEngine {
   /** Current audio energy as a smoothed 0..1 value (0 in "time" mode). */
   getLevel(): number {
     if (this.mode === "time" || !this.analyser) return 0;
-    this.analyser.getByteFrequencyData(this.freqData);
+    if (this.levelDone) return this.smoothedLevel;
+    this.readFreq();
     let sum = 0;
     for (let i = 0; i < this.freqData.length; i++) sum += this.freqData[i];
     const avg = sum / this.freqData.length / 255; // 0..1
     // simple exponential smoothing across frames
     this.smoothedLevel =
       this.smoothedLevel * this.smoothing + avg * (1 - this.smoothing);
+    this.levelDone = true;
     return this.smoothedLevel;
   }
 
@@ -234,9 +281,13 @@ export class AudioEngine {
    */
   getBands(): { bass: number; mid: number; treble: number } {
     if (this.mode === "time" || !this.analyser) {
-      return { bass: 0, mid: 0, treble: 0 };
+      this.smoothedBands.bass = 0;
+      this.smoothedBands.mid = 0;
+      this.smoothedBands.treble = 0;
+      return this.smoothedBands;
     }
-    this.analyser.getByteFrequencyData(this.freqData);
+    if (this.bandsDone) return this.smoothedBands;
+    this.readFreq();
     const n = this.freqData.length;
 
     // bin ranges as fractions of the spectrum (low bins hold most musical energy)
@@ -259,7 +310,9 @@ export class AudioEngine {
     this.smoothedBands.mid = this.smoothedBands.mid * k + mid * (1 - k);
     this.smoothedBands.treble =
       this.smoothedBands.treble * k + treble * (1 - k);
-    return { ...this.smoothedBands };
+    this.bandsDone = true;
+    // stable reference (mutated in place) -> no per-frame allocation
+    return this.smoothedBands;
   }
 
   /**
@@ -274,8 +327,9 @@ export class AudioEngine {
       this.smoothedSpectrum = new Array(bands).fill(0);
     }
     if (this.mode === "time" || !this.analyser) return this.smoothedSpectrum;
+    if (this.spectrumDone) return this.smoothedSpectrum;
 
-    this.analyser.getByteFrequencyData(this.freqData);
+    this.readFreq();
     const usable = Math.floor(this.freqData.length * 0.7);
     const k = this.smoothing;
 
@@ -288,6 +342,7 @@ export class AudioEngine {
       v = Math.min(1, v * (1 + b / bands)); // gentle high-band boost
       this.smoothedSpectrum[b] = this.smoothedSpectrum[b] * k + v * (1 - k);
     }
+    this.spectrumDone = true;
     return this.smoothedSpectrum;
   }
 

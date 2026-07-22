@@ -2,7 +2,7 @@ import "@fontsource/roboto-mono/400.css";
 import "@fontsource/roboto-mono/500.css";
 import "@fontsource/roboto-mono/700.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CssVarsProvider } from "@mui/joy/styles";
 import CssBaseline from "@mui/joy/CssBaseline";
 import Typography from "@mui/joy/Typography";
@@ -21,6 +21,7 @@ import Ribbon from "./components/ribbon/Ribbon";
 import Preloader from "./components/preloader/Preloader";
 import Controls from "./components/controls/Controls";
 import HamburgerMenu from "./components/nav/HamburgerMenu";
+import LazyMount from "./components/common/LazyMount";
 
 // Playlist served from /public. Add more here (e.g. "/track2.mp3",
 // "/track3.mp3") and the "next track" control appears automatically.
@@ -35,6 +36,21 @@ const App = () => {
   const [ribbonReady, setRibbonReady] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const [introDone, setIntroDone] = useState(false);
+
+  // Pause the WebGL render loop when the hero scrolls out of view so the rest
+  // of the page scrolls without fighting a 60fps GPU load.
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [heroVisible, setHeroVisible] = useState(true);
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   // Warm the track so it can start instantly on entry, and use canplaythrough
   // as the "audio ready" signal. A timeout fallback prevents a stuck gate if
@@ -69,7 +85,7 @@ const App = () => {
   return (
     <CssVarsProvider theme={theme}>
       <CssBaseline />
-      <div id="inicio" style={style.mainContainer}>
+      <div id="inicio" ref={heroRef} style={style.mainContainer}>
         <div style={style.overlay}>
           <div id="hero-title" style={style.overlayRow}>
             <Typography level="h1" sx={style.whiteH1}>
@@ -97,7 +113,11 @@ const App = () => {
           <Controls audio={audio} />
         </div>
         <div style={style.canvasLayer}>
-          <Ribbon audio={audio} onReady={() => setRibbonReady(true)} />
+          <Ribbon
+            audio={audio}
+            onReady={() => setRibbonReady(true)}
+            active={heroVisible}
+          />
         </div>
         <div style={style.countdownOverlay}>
           <Countdown />
@@ -107,13 +127,17 @@ const App = () => {
         <LineUp />
       </div>
       <div id="transporte">
-        <MapSection />
+        <LazyMount minHeight="80vh">
+          <MapSection />
+        </LazyMount>
       </div>
       <div id="paradas">
         <TransportInfoSection />
       </div>
       <div id="galeria">
-        <GallerySection />
+        <LazyMount minHeight="80vh">
+          <GallerySection />
+        </LazyMount>
       </div>
       <div id="info">
         <Footer />
