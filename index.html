@@ -2,9 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Boda MJ y Rodrigo</title>
+    <style>
+      html,
+      body,
+      #root {
+        margin: 0;
+        background-color: #000;
+      }
+      /* decorative side words are pinned to the screen edge via 100vw (which
+         includes the scrollbar), so they can sit a few px past the content
+         edge. clip only the horizontal axis; vertical scroll is untouched. */
+      html {
+        overflow-x: hidden;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
