@@ -307,35 +307,51 @@ const Ribbon = ({
       />
       <GlitchDriver audio={audio} glitchRef={glitchRef} caRef={caRef} />
       <EffectComposer>
-        <Bloom
-          intensity={0.3}
-          luminanceThreshold={0.55}
-          luminanceSmoothing={0.4}
-          radius={0.5}
-          mipmapBlur
-        />
-        {/* Tilt-shift is a full-screen blur pass; on a phone screen the subtle
-            edge defocus is barely visible, so skip it there to save fill-rate. */}
-        {!isMobile && (
-          <TiltShift2 blur={0.025} taper={0.5} focusArea={0.35} feather={0.3} />
-        )}
-        <Glitch
-          ref={glitchRef}
-          mode={GlitchMode.DISABLED} // idle; the driver enables bursts on beats
-          delay={new THREE.Vector2(10, 10)} // large so it never self-triggers
-          duration={new THREE.Vector2(0.08, 0.14)}
-          strength={new THREE.Vector2(0.02, 0.06)}
-          ratio={0.4}
-          columns={0.005} // scale of the blocky columns (smaller = finer blocks)
-          dtSize={128} // noise map resolution (higher = finer glitch detail)
-        />
-        <ChromaticAberration
-          ref={setCaRef}
-          offset={new THREE.Vector2(CA_BASE, CA_BASE * 0.35)}
-          radialModulation={false}
-          modulationOffset={0}
-        />
-        <ToneMapping mode={ToneMappingMode.AGX} />
+        {/* Built as an array so the mobile-only omission of TiltShift2 adds 0 or
+            1 element (never a `false`), keeping EffectComposer's typed children
+            happy AND avoiding a Fragment child it can't turn into an effect.
+            Tilt-shift is a full-screen blur pass whose subtle edge defocus is
+            barely visible on a phone, so it's dropped there to save fill-rate. */}
+        {[
+          <Bloom
+            key="bloom"
+            intensity={0.3}
+            luminanceThreshold={0.55}
+            luminanceSmoothing={0.4}
+            radius={0.5}
+            mipmapBlur
+          />,
+          ...(isMobile
+            ? []
+            : [
+                <TiltShift2
+                  key="tiltshift"
+                  blur={0.025}
+                  taper={0.5}
+                  focusArea={0.35}
+                  feather={0.3}
+                />,
+              ]),
+          <Glitch
+            key="glitch"
+            ref={glitchRef}
+            mode={GlitchMode.DISABLED} // idle; the driver enables bursts on beats
+            delay={new THREE.Vector2(10, 10)} // large so it never self-triggers
+            duration={new THREE.Vector2(0.08, 0.14)}
+            strength={new THREE.Vector2(0.02, 0.06)}
+            ratio={0.4}
+            columns={0.005} // scale of the blocky columns (smaller = finer blocks)
+            dtSize={128} // noise map resolution (higher = finer glitch detail)
+          />,
+          <ChromaticAberration
+            key="chromatic"
+            ref={setCaRef}
+            offset={new THREE.Vector2(CA_BASE, CA_BASE * 0.35)}
+            radialModulation={false}
+            modulationOffset={0}
+          />,
+          <ToneMapping key="tonemapping" mode={ToneMappingMode.AGX} />,
+        ]}
       </EffectComposer>
     </Canvas>
   );
