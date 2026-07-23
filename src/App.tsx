@@ -28,6 +28,12 @@ import LazyMount from "./components/common/LazyMount";
 // "/track3.mp3") and the "next track" control appears automatically.
 const TRACKS = ["/track.mp3"];
 
+// Session-scoped flag: once the user has entered, remounting <App/> (e.g. after
+// navigating to /galeria and back) skips the preloader. It lives at module
+// level so it survives route changes but resets on a full page reload, where
+// the WebGL scene starts cold and the preloader is still worth showing.
+let hasEnteredSession = false;
+
 const App = () => {
   // one shared audio engine, driven by the ribbon and started on entry
   const audio = useAudioEngine({ mode: "files", files: TRACKS });
@@ -36,7 +42,7 @@ const App = () => {
 
   const [ribbonReady, setRibbonReady] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
-  const [introDone, setIntroDone] = useState(false);
+  const [introDone, setIntroDone] = useState(hasEnteredSession);
 
   // Pause the WebGL render loop when the hero scrolls out of view so the rest
   // of the page scrolls without fighting a 60fps GPU load.
@@ -75,6 +81,7 @@ const App = () => {
   // selection here so it's coordinated with resume() (nothing plays on load,
   // even if the last choice was the song).
   const handleEnter = () => {
+    hasEnteredSession = true;
     audio.setMuted(readMuted());
     const mode = readMode();
     void (async () => {
@@ -82,6 +89,14 @@ const App = () => {
       await audio.resume();
     })();
   };
+
+  // When we skip the preloader on a return visit (App remounted after a route
+  // change), still restore audio: the document already has sticky activation
+  // from the earlier entry click, so resume() is allowed without a new gesture.
+  useEffect(() => {
+    if (hasEnteredSession) handleEnter();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <CssVarsProvider theme={theme}>
@@ -144,7 +159,10 @@ const App = () => {
       <div id="info">
         <Footer />
       </div>
-      {introDone && <HamburgerMenu />}
+      {/* Rendered unconditionally: the preloader (z-index 9999) covers it while
+          loading and reveals it during its own fade, so it no longer waits the
+          full ~1s fade before appearing. */}
+      <HamburgerMenu />
       {!introDone && (
         <Preloader
           ready={ribbonReady && audioReady}

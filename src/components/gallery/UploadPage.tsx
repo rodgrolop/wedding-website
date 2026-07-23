@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import PhotoUpload from "./PhotoUpload";
+import BackToHome from "../nav/BackToHome";
 
 // Standalone upload experience served at /subir. It skips the preloader and
 // hero entirely so guests land directly on the drag-drop / camera box.
@@ -12,6 +13,7 @@ const UploadPage = () => {
       </header>
       <p style={styles.subtitle}>Comparte tus fotos con nosotros</p>
       <PhotoUpload />
+      <BackToHome />
     </main>
   );
 };

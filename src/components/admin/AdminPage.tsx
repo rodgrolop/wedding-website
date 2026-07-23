@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { API_BASE } from "../gallery/api";
 import type { Photo, PhotoState } from "../gallery/api";
+import BackToHome from "../nav/BackToHome";
+import { resetGalleryRotation } from "../gallery/PhotoGrid";
 
 const TOKEN_KEY = "wedding_admin_token";
 
@@ -121,6 +123,7 @@ const AdminPage = () => {
             Entrar
           </button>
         </div>
+        <BackToHome />
       </div>
     );
   }
@@ -148,6 +151,20 @@ const AdminPage = () => {
             onClick={() => fetchPending(token)}
           >
             Actualizar
+          </button>
+          <button
+            type="button"
+            style={styles.ghostBtn}
+            onClick={() => {
+              if (
+                window.confirm(
+                  "¿Reiniciar la rotación de la galería? Solo afecta a este navegador.",
+                )
+              )
+                resetGalleryRotation();
+            }}
+          >
+            Reiniciar galería
           </button>
           <button type="button" style={styles.ghostBtn} onClick={logout}>
             Salir
@@ -207,6 +224,7 @@ const AdminPage = () => {
           );
         })}
       </div>
+      <BackToHome />
     </div>
   );
 };

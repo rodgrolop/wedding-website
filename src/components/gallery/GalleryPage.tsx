@@ -1,6 +1,43 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import PhotoGrid from "./PhotoGrid";
+import BackToHome from "../nav/BackToHome";
+
+const IconEnterFullscreen = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+    <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+    <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+    <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+  </svg>
+);
+
+const IconExitFullscreen = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M5 8h3a2 2 0 0 0 2-2V3" />
+    <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+    <path d="M5 16h3a2 2 0 0 1 2 2v3" />
+    <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+  </svg>
+);
 
 // Standalone gallery served at /galeria. Fills the viewport with the live photo
 // grid and offers a browser-fullscreen toggle so it can be projected on a big
@@ -35,12 +72,16 @@ const GalleryPage = () => {
         aria-label={
           isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"
         }
+        title={
+          isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"
+        }
       >
-        {isFullscreen ? "Salir" : "Pantalla completa"}
+        {isFullscreen ? <IconExitFullscreen /> : <IconEnterFullscreen />}
       </button>
       <div style={styles.gridArea}>
         <PhotoGrid />
       </div>
+      <BackToHome />
     </main>
   );
 };
@@ -54,19 +95,22 @@ const styles: Record<string, CSSProperties> = {
     overflow: "hidden",
   },
   fsButton: {
-    position: "absolute",
-    top: "16px",
+    position: "fixed",
     right: "16px",
-    zIndex: 10,
-    padding: "10px 16px",
-    border: "1px solid white",
-    borderRadius: "8px",
+    bottom: "16px",
+    zIndex: 50,
+    width: "48px",
+    height: "48px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    border: "1px solid rgba(255,255,255,0.35)",
     backgroundColor: "rgba(0,0,0,0.5)",
     color: "white",
-    fontFamily: "Roboto Mono, monospace",
-    fontSize: "0.8rem",
-    fontWeight: 500,
     cursor: "pointer",
+    padding: 0,
+    backdropFilter: "blur(4px)",
   },
   gridArea: {
     width: "100%",
