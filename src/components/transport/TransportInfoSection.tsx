@@ -125,14 +125,14 @@ const styles: Record<string, CSSProperties> = {
     gap: "24px",
     alignItems: "stretch",
   },
-  // Mobile heading: same sizing as the LINEUP / TRANSPORTE headers, right
-  // aligned, with its own 12px horizontal padding.
+  // Mobile heading: same sizing as the LINEUP / TRANSPORTE headers, centred,
+  // with its own 12px horizontal padding.
   headerMobile: {
     display: "block",
     width: "100%",
     boxSizing: "border-box",
     padding: "0 12px",
-    textAlign: "right",
+    textAlign: "center",
     fontFamily: "Roboto Mono, monospace",
     fontWeight: 700,
     textTransform: "uppercase",

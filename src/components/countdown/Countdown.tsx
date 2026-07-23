@@ -52,7 +52,13 @@ const Countdown = () => {
   ];
 
   return (
-    <div style={styles.container}>
+    <div
+      style={{
+        ...styles.container,
+        // centre the countdown on mobile; keep it right-aligned elsewhere
+        justifyContent: isMobile ? "center" : "flex-end",
+      }}
+    >
       <div
         style={{
           ...styles.row,

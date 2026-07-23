@@ -252,16 +252,15 @@ const styles: Record<string, CSSProperties> = {
     overflow: "hidden",
     backgroundColor: "black",
   },
-  // Mobile header: horizontal, right-aligned, non-rotated. Shares the names
-  // block's box so its right edge lines up with the list.
+  // Mobile header: horizontal, centred, non-rotated.
   header: {
     display: "block",
     boxSizing: "border-box",
     width: "80%",
     maxWidth: "1280px",
-    margin: "0 12px 0 auto",
-    padding: "0 0 0 3vw",
-    textAlign: "right",
+    margin: "0 auto",
+    padding: 0,
+    textAlign: "center",
     fontFamily: "Roboto Mono, monospace",
     fontWeight: 700,
     textTransform: "uppercase",

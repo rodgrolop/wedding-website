@@ -43,7 +43,11 @@ export const style: Record<string, CSSProperties> = {
   // Font sizes scale with viewport HEIGHT (vh) so the layout keeps roughly the
   // same proportions/positions as the screen gets shorter (mobile-first). The
   // clamp() bounds keep them sensible on very small and very large screens.
-  whiteH1: { color: "white", fontSize: "clamp(54px, 8vw, 160px)" },
+  whiteH1: {
+    color: "white",
+    fontSize: "clamp(54px, 8vw, 160px)",
+    WebkitTextStroke: "1px white",
+  },
   transH1: {
     color: "black",
     fontSize: "clamp(54px, 8vw, 160px)",

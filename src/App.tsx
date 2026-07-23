@@ -35,7 +35,7 @@ const App = () => {
 
   const [ribbonReady, setRibbonReady] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
-  const [introDone, setIntroDone] = useState(false);
+  const [introDone, setIntroDone] = useState(true);
 
   // Pause the WebGL render loop when the hero scrolls out of view so the rest
   // of the page scrolls without fighting a 60fps GPU load.
@@ -112,13 +112,13 @@ const App = () => {
           </Typography>
           <Controls audio={audio} />
         </div>
-        <div style={style.canvasLayer}>
+        {/**<div style={style.canvasLayer}>
           <Ribbon
             audio={audio}
             onReady={() => setRibbonReady(true)}
             active={heroVisible}
           />
-        </div>
+        </div>**/}
         <div style={style.countdownOverlay}>
           <Countdown />
         </div>

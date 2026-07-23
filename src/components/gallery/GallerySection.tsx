@@ -94,15 +94,15 @@ const styles: Record<string, CSSProperties> = {
     marginTop: "1rem",
     overflow: "hidden",
   },
-  // Mobile header: horizontal, LEFT-aligned, non-rotated (mirror of TRANSPORTE).
+  // Mobile header: horizontal, centred, non-rotated.
   header: {
     display: "block",
     boxSizing: "border-box",
     width: "80%",
     maxWidth: "1280px",
-    margin: "0 auto 0 12px",
+    margin: "0 auto",
     padding: 0,
-    textAlign: "left",
+    textAlign: "center",
     fontFamily: "Roboto Mono, monospace",
     fontWeight: 700,
     textTransform: "uppercase",
