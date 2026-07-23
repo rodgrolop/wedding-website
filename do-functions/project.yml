@@ -6,19 +6,19 @@ packages:
     # These are read from a .env file at the project root (see .env.example).
     # In App Platform you set the same names as component env vars instead.
     environment:
-      SPACES_KEY: ${SPACES_KEY}
-      SPACES_SECRET: ${SPACES_SECRET}
-      SPACES_REGION: ${SPACES_REGION}
-      SPACES_BUCKET: ${SPACES_BUCKET}
-      SPACES_ENDPOINT: ${SPACES_ENDPOINT}
-      CDN_BASE: ${CDN_BASE}
-      ADMIN_TOKEN: ${ADMIN_TOKEN}
-      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN}
-      SIGHTENGINE_USER: ${SIGHTENGINE_USER}
-      SIGHTENGINE_SECRET: ${SIGHTENGINE_SECRET}
-      MOD_HIGH: ${MOD_HIGH}
-      MOD_LOW: ${MOD_LOW}
-      MOD_SUGG: ${MOD_SUGG}
+      SPACES_KEY: "${SPACES_KEY}"
+      SPACES_SECRET: "${SPACES_SECRET}"
+      SPACES_REGION: "${SPACES_REGION}"
+      SPACES_BUCKET: "${SPACES_BUCKET}"
+      SPACES_ENDPOINT: "${SPACES_ENDPOINT}"
+      CDN_BASE: "${CDN_BASE}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN}"
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN}"
+      SIGHTENGINE_USER: "${SIGHTENGINE_USER}"
+      SIGHTENGINE_SECRET: "${SIGHTENGINE_SECRET}"
+      MOD_HIGH: "${MOD_HIGH}"
+      MOD_LOW: "${MOD_LOW}"
+      MOD_SUGG: "${MOD_SUGG}"
     functions:
       - name: sign-upload
         runtime: "nodejs:18"
