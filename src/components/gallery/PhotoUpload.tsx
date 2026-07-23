@@ -1,10 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import type { CSSProperties, ChangeEvent, DragEvent } from "react";
-
-// API base: same-origin `/api` in production (App Platform ingress). For local
-// dev you can point it at the deployed domain via VITE_GALLERY_API.
-const env = import.meta.env as Record<string, string | undefined>;
-const API_BASE = env.VITE_GALLERY_API || "/api";
+import { API_BASE } from "./api";
 
 // Downscale big phone photos in the browser before upload: lighter files,
 // faster gallery, and no server-side image processing.
@@ -83,7 +79,9 @@ const PhotoUpload = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const update = useCallback((id: string, status: ItemStatus) => {
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, status } : it)));
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, status } : it)),
+    );
   }, []);
 
   const processFile = useCallback(
@@ -134,9 +132,9 @@ const PhotoUpload = () => {
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
-      const images = Array.from(files).filter((f) =>
-        f.type.startsWith("image/"),
-      );
+      const images = Array.from(files)
+        .filter((f) => f.type.startsWith("image/"))
+        .slice(0, 1);
       if (!images.length) return;
       const newItems = images.map((file) => ({
         file,
@@ -186,7 +184,7 @@ const PhotoUpload = () => {
         >
           <span style={styles.dropIcon}>+</span>
           <span style={styles.dropText}>
-            Arrastra tus fotos aquí o haz clic para subir
+            Arrastra tu foto aquí o haz clic para subir
           </span>
           <span style={styles.dropHint}>
             Se revisan antes de publicarse en la galería
@@ -195,7 +193,6 @@ const PhotoUpload = () => {
             ref={inputRef}
             type="file"
             accept="image/*"
-            multiple
             onChange={onInputChange}
             style={{ display: "none" }}
           />

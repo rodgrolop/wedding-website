@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
+import PhotoGrid from "./PhotoGrid";
 
 // vertical word pinned to the RIGHT (mirrors MapSection's left word). change
 // freely -> section height and reserved-space offset are measured from it.
@@ -53,11 +54,7 @@ const GallerySection = () => {
             : { ...styles.content, right: contentRight }
         }
       >
-        <iframe
-          src="https://guest.gallery/en/upload/Ksm4/photowall?qr=true&position=left-bottom"
-          title="Galería"
-          style={styles.iframe}
-        />
+        <PhotoGrid />
       </div>
       {!isMobile && (
         <span ref={sideRef} style={styles.sideText}>
@@ -111,12 +108,6 @@ const styles: Record<string, CSSProperties> = {
     color: "black",
     WebkitTextStroke: "1px white",
     whiteSpace: "nowrap",
-  },
-  iframe: {
-    width: "100%",
-    height: "100%",
-    border: "none",
-    display: "block",
   },
   sideText: {
     // same styling as MapSection's side word, but pinned to the screen's RIGHT
