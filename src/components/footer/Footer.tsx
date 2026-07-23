@@ -16,7 +16,7 @@ const Footer = () => {
           <div style={styles.brandLocation}>
             Salones María Luisa - Torredonjimeno
           </div>
-          <div style={styles.brandDate}>1 de Agosto de 2026</div>
+          <div style={styles.brandDate}>1 de Agosto de 2026 - 20:00</div>
         </div>
 
         {VENUES.map((v) => (

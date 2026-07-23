@@ -73,10 +73,34 @@ function resizeImage(file: File): Promise<Blob> {
   });
 }
 
+// Touch devices (phones/tablets) benefit from a dedicated camera trigger: on
+// modern Android the system Photo Picker opened by accept="image/*" has NO
+// camera option, so we expose an explicit capture input instead.
+const isTouch =
+  typeof window !== "undefined" &&
+  (navigator.maxTouchPoints > 0 || "ontouchstart" in window);
+
+const IconCamera = () => (
+  <svg
+    width="40"
+    height="40"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.6}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
+
 const PhotoUpload = () => {
   const [items, setItems] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const update = useCallback((id: string, status: ItemStatus) => {
     setItems((prev) =>
@@ -164,6 +188,27 @@ const PhotoUpload = () => {
   return (
     <section style={styles.wrapper}>
       <div style={styles.inner}>
+        {isTouch && (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => cameraRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ")
+                cameraRef.current?.click();
+            }}
+            style={{ ...styles.dropzone, ...styles.cameraZone }}
+          >
+            <span style={styles.dropIcon}>
+              <IconCamera />
+            </span>
+            <span style={styles.dropText}>Haz una foto</span>
+            <span style={styles.dropHint}>
+              Se revisan antes de publicarse en la galería
+            </span>
+          </div>
+        )}
+
         <div
           role="button"
           tabIndex={0}
@@ -179,24 +224,40 @@ const PhotoUpload = () => {
           onDrop={onDrop}
           style={{
             ...styles.dropzone,
+            ...(isTouch ? styles.galleryZone : null),
             ...(dragging ? styles.dropzoneActive : null),
           }}
         >
           <span style={styles.dropIcon}>+</span>
           <span style={styles.dropText}>
-            Arrastra tu foto aquí o haz clic para subir
+            {isTouch
+              ? "Elige una foto de tu galería"
+              : "Arrastra tu foto aquí o haz clic para subir"}
           </span>
           <span style={styles.dropHint}>
             Se revisan antes de publicarse en la galería
           </span>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            onChange={onInputChange}
-            style={{ display: "none" }}
-          />
         </div>
+
+        {/* Hidden inputs live OUTSIDE the clickable zones: a programmatic
+            .click() dispatches a bubbling click event, and if the input were
+            nested inside a zone it would re-trigger that zone's onClick and
+            open a second file dialog. */}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          onChange={onInputChange}
+          style={{ display: "none" }}
+        />
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onInputChange}
+          style={{ display: "none" }}
+        />
 
         {items.length > 0 && (
           <div style={styles.grid}>
@@ -264,6 +325,16 @@ const styles: Record<string, CSSProperties> = {
   dropHint: {
     fontSize: "0.75rem",
     opacity: 0.6,
+  },
+  cameraZone: {
+    border: "2px solid white",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    marginBottom: "16px",
+  },
+  galleryZone: {
+    minHeight: "150px",
+    borderColor: "rgba(255,255,255,0.35)",
+    opacity: 0.85,
   },
   grid: {
     display: "grid",
