@@ -204,7 +204,7 @@ const PhotoUpload = () => {
             </span>
             <span style={styles.dropText}>Haz una foto</span>
             <span style={styles.dropHint}>
-              Se revisan antes de publicarse en la galería
+              Se revisan con IA de moderación antes de publicarse en la galería
             </span>
           </div>
         )}
@@ -235,7 +235,7 @@ const PhotoUpload = () => {
               : "Arrastra tu foto aquí o haz clic para subir"}
           </span>
           <span style={styles.dropHint}>
-            Se revisan antes de publicarse en la galería
+            Se revisan con IA de moderación antes de publicarse en la galería
           </span>
         </div>
 

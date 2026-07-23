@@ -89,12 +89,12 @@ float eqAt(float u) {
 
 vec2 waves(float u) {
   float env = sin(u * PI);
-  // MID band drives the waves: more/larger olas with the mids
-  float freq = u_waveFreq + u_mid * u_waveFreqReact;
+  // BASS band drives the waves: more/larger olas on the low-end hits
+  float freq = u_waveFreq + u_bass * u_waveFreqReact;
   float phase = u * PI * freq + u_time * u_waveSpeed;
   // spatial EQ: the band that maps to this u position bumps the local amplitude
   float eq = eqAt(u);
-  float amp = u_waveAmp * (1.0 + u_mid * u_audioReact + eq * u_eqReact);
+  float amp = u_waveAmp * (1.0 + u_bass * u_audioReact + eq * u_eqReact);
   return amp * env * vec2(0.0, sin(phase));
 }
 
@@ -128,9 +128,9 @@ vec2 rawPos(float u, float v) {
   // so each line goes edge-on at a slightly different point. This turns the
   // hard single-point nodes into tight caustics, like the poster.
   float shear = (v - 0.5) * u_twistShear * sin(u * PI);
-  // BASS band writhe: extra rotation concentrated at the centre so the knot
-  // tightens/twists with the low end (zero at u = 0/1 and when u_bass = 0)
-  float audioTwist = u_bass * u_twistReact * sin(u * PI);
+  // MID band writhe: extra rotation concentrated at the centre so the knot
+  // tightens/twists with the mids (zero at u = 0/1 and when u_mid = 0)
+  float audioTwist = u_mid * u_twistReact * sin(u * PI);
   // slow audio-free breathing: the central knot gently writhes back and forth
   float breatheTwist =
     sin(u_time * u_twistBreatheSpeed) * u_twistBreatheAmp * sin(u * PI);

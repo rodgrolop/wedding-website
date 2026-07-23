@@ -19,7 +19,6 @@ const LINKS: NavLink[] = [
   { label: "GALERÍA", id: "galeria" },
   { label: "+INFO", id: "info" },
   { label: "GALERÍA DE FOTOS", to: "/galeria" },
-  { label: "SUBIR FOTO", to: "/subir" },
 ];
 
 const HamburgerMenu = () => {

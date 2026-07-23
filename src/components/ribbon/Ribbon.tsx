@@ -52,7 +52,7 @@ const RibbonMaterial = shaderMaterial(
     u_waveSpeed: 0.6, // how fast the waves scroll along the ribbon (u_time)
     u_audioReact: 3.0, // how much the audio level swells the wave amplitude
     u_waveFreqReact: 0, // extra waves that appear on audio peaks (0 = off)
-    u_twistReact: 0.15, // how much the audio tightens/writhes the central twist
+    u_twistReact: 0.6, // MID hits kick the central twist (beat-driven)
     u_twistBreatheAmp: 0.35, // slow, audio-free writhe of the central knot (0 = off)
     u_twistBreatheSpeed: 0.5, // speed of that breathing
     u_thickReact: 0, // how much the audio swells the line thickness (disabled)
@@ -62,7 +62,8 @@ const RibbonMaterial = shaderMaterial(
     u_overscan: 0.35, // pushes the line ends beyond the viewport edges
     u_resolution: new THREE.Vector2(1, 1),
     u_opacity: 0.7,
-    u_pulseReact: 0.35, // how much the audio brightens/pulses the lines (0 = off)
+    u_pulseReact: 0.75, // TREBLE hits brighten/pulse the lines (0 = off)
+    u_pulseGamma: 2.5, // contrast curve on the treble term (>1 = more explicit jump, same peak)
     u_eq: new Array(N_EQ).fill(0), // spatial EQ levels (lows->highs along u)
     u_eqReact: 1.0, // how much the spatial EQ bumps the local wave amplitude (0 = off)
     u_eqBright: 0.35, // how much the spatial EQ brightens the lines per position (0 = off)
@@ -313,7 +314,11 @@ const Ribbon = ({
           radius={0.5}
           mipmapBlur
         />
-        <TiltShift2 blur={0.025} taper={0.5} focusArea={0.35} feather={0.3} />
+        {/* Tilt-shift is a full-screen blur pass; on a phone screen the subtle
+            edge defocus is barely visible, so skip it there to save fill-rate. */}
+        {!isMobile && (
+          <TiltShift2 blur={0.025} taper={0.5} focusArea={0.35} feather={0.3} />
+        )}
         <Glitch
           ref={glitchRef}
           mode={GlitchMode.DISABLED} // idle; the driver enables bursts on beats

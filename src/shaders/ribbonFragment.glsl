@@ -5,6 +5,7 @@ uniform float u_opacity;
 uniform float u_fadeBias; // shapes the length gradient (lower = brightens sooner)
 uniform highp float u_treble; // high-band level 0..1 (highp to match the vertex shader)
 uniform float u_pulseReact; // how much the treble brightens/pulses the lines
+uniform float u_pulseGamma; // contrast curve on the treble term (>1 = snappier onset, same peak)
 uniform float u_eqBright; // how much the spatial EQ brightens the lines per position
 
 varying float vV;
@@ -23,7 +24,10 @@ void main() {
   // the colour past 1.0 lets the bloom flare on peaks. At u_treble = 0 or
   // u_pulseReact = 0 this equals the static look.
   // spatial EQ also brightens each position by its local spectrum level
-  float pulse = 1.0 + u_treble * u_pulseReact + vEq * u_eqBright;
+  // treble term with a contrast curve: pow keeps 0->0 and 1->1 (same peak) but
+  // pushes mid/low values down, so the "no treble -> treble" jump is explicit.
+  float trebleTerm = pow(clamp(u_treble, 0.0, 1.0), u_pulseGamma);
+  float pulse = 1.0 + trebleTerm * u_pulseReact + vEq * u_eqBright;
   vec3 color = u_color * pulse;
   float alpha = clamp(u_opacity * pulse, 0.0, 1.0) * edge * lengthGrad;
 

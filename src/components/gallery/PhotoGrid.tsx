@@ -60,6 +60,28 @@ export function resetGalleryRotation() {
   }
 }
 
+// Shimmer animation for the initial-load skeleton tiles. Injected once via a
+// <style> tag since inline styles can't declare @keyframes.
+const SKELETON_CSS = `
+@keyframes gallery-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.gallery-skeleton-cell {
+  background: linear-gradient(
+    90deg,
+    #111 25%,
+    #1d1d1d 37%,
+    #111 63%
+  );
+  background-size: 200% 100%;
+  animation: gallery-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gallery-skeleton-cell { animation: none; }
+}
+`;
+
 const PhotoGrid = () => {
   const bp = useBreakpoint();
   const { cols, rows } = bp === "mobile" ? GRID.mobile : GRID.other;
@@ -196,6 +218,25 @@ const PhotoGrid = () => {
 
   return (
     <div ref={rootRef} style={styles.root}>
+      <style>{SKELETON_CSS}</style>
+      {/* Skeleton mosaic: shown ONLY during the very first fetch (!loaded).
+          Poll refreshes keep `loaded` true, so they just swap the content. */}
+      {!loaded && (
+        <div style={gridStyle} aria-hidden>
+          <div
+            className="gallery-skeleton-cell"
+            style={{ ...styles.cell, ...styles.featured }}
+          />
+          {Array.from({ length: smallCount }).map((_, i) => (
+            <div
+              key={i}
+              className="gallery-skeleton-cell"
+              style={styles.cell}
+            />
+          ))}
+        </div>
+      )}
+
       {loaded && !hasPhotos && (
         <div style={styles.empty}>Aún no hay fotos. ¡Sé el primero!</div>
       )}
