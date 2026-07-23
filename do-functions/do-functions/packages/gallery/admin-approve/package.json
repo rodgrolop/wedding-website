@@ -1,0 +1,7 @@
+{
+  "name": "admin-approve",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.0"
+  }
+}

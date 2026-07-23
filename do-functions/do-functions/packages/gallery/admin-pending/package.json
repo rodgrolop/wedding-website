@@ -1,0 +1,8 @@
+{
+  "name": "admin-pending",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/s3-request-presigner": "^3.658.0"
+  }
+}
