@@ -16,6 +16,7 @@ import LineUp from "./components/names/LineUp";
 import MapSection from "./components/map/MapSection";
 import TransportInfoSection from "./components/transport/TransportInfoSection";
 import GallerySection from "./components/gallery/GallerySection";
+import PhotoUpload from "./components/gallery/PhotoUpload";
 import Footer from "./components/footer/Footer";
 import Ribbon from "./components/ribbon/Ribbon";
 import Preloader from "./components/preloader/Preloader";
@@ -138,6 +139,7 @@ const App = () => {
         <LazyMount minHeight="80vh">
           <GallerySection />
         </LazyMount>
+        <PhotoUpload />
       </div>
       <div id="info">
         <Footer />
