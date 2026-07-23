@@ -5,9 +5,10 @@ const {
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
-// PROTECTED endpoint (x-admin-token header). Lists the PENDING photos with
-// short-lived presigned GET URLs so you can preview them in an admin page
-// before approving/rejecting. Pending objects are private, hence the signing.
+// PROTECTED endpoint (x-admin-token header). Lists EVERY photo across the
+// pending/, rejected/ and approved/ prefixes with short-lived presigned GET
+// URLs so you can preview and act on any of them from the admin page. Each
+// item carries a `state` derived from its prefix.
 
 const cors = () => ({
   "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "*",
@@ -44,30 +45,47 @@ exports.main = async (args) => {
     };
   }
 
-  const out = await s3.send(
-    new ListObjectsV2Command({
-      Bucket: process.env.SPACES_BUCKET,
-      Prefix: "pending/",
-      MaxKeys: 1000,
+  const bucket = process.env.SPACES_BUCKET;
+  const PREFIXES = [
+    { prefix: "pending/", state: "pending" },
+    { prefix: "rejected/", state: "rejected" },
+    { prefix: "approved/", state: "approved" },
+  ];
+
+  const lists = await Promise.all(
+    PREFIXES.map(async ({ prefix, state }) => {
+      const out = await s3.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: prefix,
+          MaxKeys: 1000,
+        }),
+      );
+      return Promise.all(
+        (out.Contents || [])
+          .filter((o) => o.Size > 0)
+          .map(async (o) => ({
+            key: o.Key,
+            state,
+            at: o.LastModified,
+            url: await getSignedUrl(
+              s3,
+              new GetObjectCommand({ Bucket: bucket, Key: o.Key }),
+              { expiresIn: 600 },
+            ),
+          })),
+      );
     }),
   );
-  const items = await Promise.all(
-    (out.Contents || [])
-      .filter((o) => o.Size > 0)
-      .sort((a, b) => new Date(a.LastModified) - new Date(b.LastModified))
-      .map(async (o) => ({
-        key: o.Key,
-        at: o.LastModified,
-        url: await getSignedUrl(
-          s3,
-          new GetObjectCommand({
-            Bucket: process.env.SPACES_BUCKET,
-            Key: o.Key,
-          }),
-          { expiresIn: 600 },
-        ),
-      })),
-  );
+
+  // pending first, then rejected, then approved; newest first within a group
+  const order = { pending: 0, rejected: 1, approved: 2 };
+  const items = lists
+    .flat()
+    .sort(
+      (a, b) =>
+        order[a.state] - order[b.state] || new Date(b.at) - new Date(a.at),
+    );
 
   return {
     statusCode: 200,
@@ -76,6 +94,7 @@ exports.main = async (args) => {
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
     },
-    body: JSON.stringify({ pending: items }),
+    // `items` is the new shape; `pending` kept for backward compatibility
+    body: JSON.stringify({ items, pending: items }),
   };
 };

@@ -1,16 +1,30 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { API_BASE } from "../gallery/api";
-import type { Photo } from "../gallery/api";
+import type { Photo, PhotoState } from "../gallery/api";
 
 const TOKEN_KEY = "wedding_admin_token";
+
+const STATE_LABEL: Record<PhotoState, string> = {
+  pending: "Pendiente",
+  rejected: "Rechazada por IA",
+  approved: "Publicada",
+};
+
+const STATE_COLOR: Record<PhotoState, string> = {
+  pending: "#e0b341",
+  rejected: "#e05a5a",
+  approved: "#5fbf6b",
+};
+
+const stateOf = (p: Photo): PhotoState => p.state ?? "pending";
 
 const AdminPage = () => {
   const [token, setToken] = useState<string>(
     () => localStorage.getItem(TOKEN_KEY) || "",
   );
   const [input, setInput] = useState("");
-  const [pending, setPending] = useState<Photo[]>([]);
+  const [items, setItems] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [busy, setBusy] = useState<Record<string, boolean>>({});
@@ -24,11 +38,16 @@ const AdminPage = () => {
       });
       if (res.status === 401) {
         setAuthError(true);
-        setPending([]);
+        setItems([]);
         return false;
       }
       const data = await res.json();
-      setPending(Array.isArray(data.pending) ? data.pending : []);
+      const list = Array.isArray(data.items)
+        ? data.items
+        : Array.isArray(data.pending)
+          ? data.pending
+          : [];
+      setItems(list);
       return true;
     } catch {
       setAuthError(true);
@@ -62,7 +81,8 @@ const AdminPage = () => {
         body: JSON.stringify({ key }),
       });
       if (res.ok) {
-        setPending((prev) => prev.filter((p) => p.key !== key));
+        // refetch so the item reappears in its new state (e.g. approved)
+        void fetchPending(token);
       }
     } catch {
       // leave it in the list on failure
@@ -75,7 +95,7 @@ const AdminPage = () => {
     localStorage.removeItem(TOKEN_KEY);
     setToken("");
     setInput("");
-    setPending([]);
+    setItems([]);
   };
 
   // --- token gate ---
@@ -106,11 +126,20 @@ const AdminPage = () => {
   }
 
   // --- moderation queue ---
+  const counts = items.reduce(
+    (acc, p) => {
+      acc[stateOf(p)] += 1;
+      return acc;
+    },
+    { pending: 0, rejected: 0, approved: 0 } as Record<PhotoState, number>,
+  );
+
   return (
     <div style={styles.page}>
       <div style={styles.topbar}>
         <h1 style={styles.title}>
-          Pendientes de revisión ({pending.length})
+          Moderación ({items.length}) · {counts.pending} pendientes ·{" "}
+          {counts.rejected} rechazadas · {counts.approved} publicadas
         </h1>
         <div style={styles.topActions}>
           <button
@@ -127,34 +156,56 @@ const AdminPage = () => {
       </div>
 
       {loading && <p style={styles.muted}>Cargando…</p>}
-      {!loading && pending.length === 0 && (
-        <p style={styles.muted}>No hay fotos pendientes. Todo revisado.</p>
+      {!loading && items.length === 0 && (
+        <p style={styles.muted}>No hay fotos todavía.</p>
       )}
 
       <div style={styles.grid}>
-        {pending.map((p) => (
-          <div key={p.key} style={styles.card}>
-            <img src={p.url} alt="" style={styles.cardImg} />
-            <div style={styles.cardActions}>
-              <button
-                type="button"
-                disabled={busy[p.key]}
-                style={{ ...styles.approveBtn, opacity: busy[p.key] ? 0.5 : 1 }}
-                onClick={() => resolve(p.key, "approve")}
-              >
-                Aprobar
-              </button>
-              <button
-                type="button"
-                disabled={busy[p.key]}
-                style={{ ...styles.rejectBtn, opacity: busy[p.key] ? 0.5 : 1 }}
-                onClick={() => resolve(p.key, "reject")}
-              >
-                Rechazar
-              </button>
+        {items.map((p) => {
+          const st = stateOf(p);
+          return (
+            <div key={p.key} style={styles.card}>
+              <div style={styles.imgWrap}>
+                <img src={p.url} alt="" style={styles.cardImg} />
+                <span
+                  style={{ ...styles.badge, backgroundColor: STATE_COLOR[st] }}
+                >
+                  {STATE_LABEL[st]}
+                </span>
+              </div>
+              <div style={styles.cardActions}>
+                {st !== "approved" && (
+                  <button
+                    type="button"
+                    disabled={busy[p.key]}
+                    style={{
+                      ...styles.approveBtn,
+                      opacity: busy[p.key] ? 0.5 : 1,
+                    }}
+                    onClick={() => resolve(p.key, "approve")}
+                  >
+                    {st === "rejected" ? "Aprobar igualmente" : "Aprobar"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={busy[p.key]}
+                  style={{
+                    ...styles.rejectBtn,
+                    opacity: busy[p.key] ? 0.5 : 1,
+                  }}
+                  onClick={() => resolve(p.key, "reject")}
+                >
+                  {st === "approved"
+                    ? "Retirar"
+                    : st === "rejected"
+                      ? "Eliminar"
+                      : "Rechazar"}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -191,11 +242,25 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     flexDirection: "column",
   },
+  imgWrap: {
+    position: "relative",
+  },
   cardImg: {
     width: "100%",
     aspectRatio: "1 / 1",
     objectFit: "cover",
     display: "block",
+  },
+  badge: {
+    position: "absolute",
+    top: "8px",
+    left: "8px",
+    padding: "3px 8px",
+    borderRadius: "6px",
+    fontSize: "0.65rem",
+    fontWeight: 700,
+    color: "black",
+    letterSpacing: "0.02em",
   },
   cardActions: { display: "flex" },
   approveBtn: {

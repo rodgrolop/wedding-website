@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 import { useBreakpoint } from "../../hooks/useBreakpoint";
 
 // Approximate top offset (px) to sit the toggle around the top of "MJ RODRIGO".
@@ -6,20 +7,25 @@ import { useBreakpoint } from "../../hooks/useBreakpoint";
 // taller than the glyphs) keeps the alignment simple and predictable.
 const TOGGLE_TOP_PX = { mobile: 24, other: 40 } as const;
 
-// Section links; ids match the anchors added in App.tsx. "+INFO" targets the
-// footer.
-const LINKS: { label: string; id: string }[] = [
+// Links either scroll to an in-page section (`id`, anchors added in App.tsx)
+// or navigate to a standalone route (`to`). "+INFO" targets the footer.
+type NavLink = { label: string; id?: string; to?: string };
+
+const LINKS: NavLink[] = [
   { label: "INICIO", id: "inicio" },
   { label: "LINEUP", id: "lineup" },
   { label: "TRANSPORTE", id: "transporte" },
   { label: "PARADAS", id: "paradas" },
   { label: "GALERÍA", id: "galeria" },
   { label: "+INFO", id: "info" },
+  { label: "GALERÍA DE FOTOS", to: "/galeria" },
+  { label: "SUBIR FOTO", to: "/subir" },
 ];
 
 const HamburgerMenu = () => {
   const [open, setOpen] = useState(false);
   const bp = useBreakpoint();
+  const navigate = useNavigate();
 
   const toggleTop =
     bp === "mobile" ? TOGGLE_TOP_PX.mobile : TOGGLE_TOP_PX.other;
@@ -39,12 +45,17 @@ const HamburgerMenu = () => {
     };
   }, [open]);
 
-  const go = (id: string) => {
+  const go = (link: NavLink) => {
     setOpen(false);
+    if (link.to) {
+      navigate(link.to);
+      return;
+    }
     // Let the overlay start closing, then smooth-scroll to the section.
     requestAnimationFrame(() => {
+      if (!link.id) return;
       document
-        .getElementById(id)
+        .getElementById(link.id)
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
@@ -76,10 +87,10 @@ const HamburgerMenu = () => {
       >
         <ul style={styles.list}>
           {LINKS.map((link) => (
-            <li key={link.id}>
+            <li key={link.to ?? link.id}>
               <button
                 type="button"
-                onClick={() => go(link.id)}
+                onClick={() => go(link)}
                 style={styles.link}
               >
                 {link.label}

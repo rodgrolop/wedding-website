@@ -4,9 +4,10 @@ const {
   DeleteObjectCommand,
 } = require("@aws-sdk/client-s3");
 
-// PROTECTED endpoint (x-admin-token header). Approves a pending photo by
-// copying it from `pending/` to `approved/` with a public-read ACL (so the CDN
-// serves it), then deleting the pending original.
+// PROTECTED endpoint (x-admin-token header). Approves a photo from any state
+// (pending/ or rejected/) by copying it to `approved/` with a public-read ACL
+// (so the CDN serves it), then deleting the original. If the object is already
+// under approved/ it just re-asserts the public ACL (no-op move).
 
 const cors = () => ({
   "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "*",
@@ -60,7 +61,7 @@ exports.main = async (args) => {
   }
 
   const { key } = readBody(args);
-  if (!key || !String(key).startsWith("pending/")) {
+  if (!key || !/^(pending|rejected|approved)\//.test(String(key))) {
     return {
       statusCode: 400,
       headers: { ...cors(), "Content-Type": "application/json" },
@@ -68,7 +69,7 @@ exports.main = async (args) => {
     };
   }
   const bucket = process.env.SPACES_BUCKET;
-  const dest = key.replace(/^pending\//, "approved/");
+  const dest = key.replace(/^(pending|rejected|approved)\//, "approved/");
 
   await s3.send(
     new CopyObjectCommand({
@@ -79,11 +80,16 @@ exports.main = async (args) => {
       MetadataDirective: "COPY",
     }),
   );
-  await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  if (dest !== key) {
+    await s3.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  }
 
   return {
     statusCode: 200,
     headers: { ...cors(), "Content-Type": "application/json" },
-    body: JSON.stringify({ approved: dest, url: `${process.env.CDN_BASE}/${dest}` }),
+    body: JSON.stringify({
+      approved: dest,
+      url: `${process.env.CDN_BASE}/${dest}`,
+    }),
   };
 };

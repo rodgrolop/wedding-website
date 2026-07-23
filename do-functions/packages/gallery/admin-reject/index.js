@@ -1,7 +1,8 @@
 const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
-// PROTECTED endpoint (x-admin-token header). Rejects a pending photo by simply
-// deleting it from `pending/`. It was never public, so nothing else to undo.
+// PROTECTED endpoint (x-admin-token header). Removes a photo from any state
+// (pending/, rejected/ or approved/) by deleting it permanently. Used both to
+// reject pending photos and to retire an already-approved one from the gallery.
 
 const cors = () => ({
   "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "*",
@@ -55,7 +56,7 @@ exports.main = async (args) => {
   }
 
   const { key } = readBody(args);
-  if (!key || !String(key).startsWith("pending/")) {
+  if (!key || !/^(pending|rejected|approved)\//.test(String(key))) {
     return {
       statusCode: 400,
       headers: { ...cors(), "Content-Type": "application/json" },

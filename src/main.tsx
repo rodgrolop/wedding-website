@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.tsx";
 import AdminPage from "./components/admin/AdminPage.tsx";
 import UploadPage from "./components/gallery/UploadPage.tsx";
+import GalleryPage from "./components/gallery/GalleryPage.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -11,6 +12,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/subir" element={<UploadPage />} />
+        <Route path="/galeria" element={<GalleryPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
